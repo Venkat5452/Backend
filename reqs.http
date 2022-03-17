@@ -1,0 +1,27 @@
+GET http://localhost:4000/getusers 
+
+###
+GET http://localhost:4000/getuser/3
+
+###
+POST http://localhost:4000/create-user
+Content-Type: application/json
+
+{
+  "id":3,
+  "name":"kiran",
+  "age":24
+}
+
+###
+PUT http://localhost:4000/update-user 
+Content-Type: application/json
+
+{
+  "id":1,
+  "name":"ravi babu",
+  "age":24
+}
+
+###
+DELETE http://localhost:4000/remove-user/1
