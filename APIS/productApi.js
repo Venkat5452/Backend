@@ -1,4 +1,5 @@
 //create a special route to handle product reqs
+const { workspaceSchemaPath } = require('@angular/cli/utilities/config');
 const exp=require('express');
 const productApp=exp.Router();
 
@@ -18,10 +19,50 @@ productApp.get("/getproduct/:id",(request,response)=>{
 
 
 //to create product
-productApp.post('/create-product',(request,response)=>{
-  response.send({message:"product is created"})
-})
+// productApp.post('/create-product',(request,response)=>{
+ 
+//   //get productCollectionObject
+//   let productCollectionObject=request.app.get("productCollectionObject")
+//   //get product obj from req
+//   let productObj=request.body;
+//   //insert productObj
+//   productCollectionObject.insertOne(productObj,(err,result)=>{
+//     if(err){
+//       console.log("err in creating product ",err)
+//     }
+//     else{
+//       response.send({message:'Product created successfylly'})
+//     }
+//   })
 
+// })
+
+//creating proudct using promise
+// productApp.post('/create-product',(request,response)=>{
+ 
+//   //get productCollectionObject
+//   let productCollectionObject=request.app.get("productCollectionObject")
+//   //get product obj from req
+//   let productObj=request.body;
+//   //insert productObj
+//   productCollectionObject.insertOne(productObj)
+//   .then((result)=>response.send({message:'Product created successfylly'}))
+//   .catch(err=> console.log("err in creating product ",err))
+
+// })
+
+//create product with async n await
+productApp.post('/create-product',async(request,response)=>{
+ 
+  //get productCollectionObject
+  let productCollectionObject=request.app.get("productCollectionObject")
+  //get product obj from req
+  let productObj=request.body;
+  //insert productObj
+  let result=await productCollectionObject.insertOne(productObj)
+  //send response
+  response.send({message:'Product created successfylly'})
+})
 
 
 //export productApp
