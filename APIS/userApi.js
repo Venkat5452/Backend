@@ -1,91 +1,115 @@
 //create router to handle user api reqs
-const exp=require('express');
-const userApp=exp.Router()
-
+const exp = require("express");
+const userApp = exp.Router();
+const expressAsyncHandler = require("express-async-handler");
+//import bcryptjs for password hashing
+const bcryptjs = require("bcryptjs");
+//import jsonwebtoken to create token
+const jwt=require("jsonwebtoken")
 
 //to extract body of request object
 userApp.use(exp.json());
 
-
-//Fake users data
-let users = [
-  {
-    id: 1,
-    name: "ravi",
-    age: 21,
-  },
-  {
-    id: 2,
-    name: "madhu",
-    age: 23,
-  },
-];
-
 //USER API Routes
 
 //create route to handle '/getusers' path
-userApp.get("/getusers",(request, response) => {
-  response.send({ message: "all users", payload: users});
-});
+userApp.get(
+  "/getusers",
+  expressAsyncHandler(async (request, response) => {
+    //get userCollectionObject
+    let userCollectionObject = request.app.get("userCollectionObject");
+    //get all users
+    let users = await userCollectionObject.find().toArray();
+    //send res
+    response.send({ message: "Users list", payload: users });
+  })
+);
 
 
 
 
-//create route to handle '/getuser/id'
-userApp.get("/getuser/:id", (request, response) => {
-  //get url param
-  let userId = +request.params.id;
 
-  //search user obj by id
-  let userObj = users.find((userObj) => userObj.id == userId);
-  
-  //if user not found
-  if (userObj == undefined) {
-    response.send({ message: "User not existed" });
-  }
-  //if user found
-  else {
-    response.send({ message: "User found", payload: userObj });
-  }
-});
+
+
+//create route to user login
+userApp.post(
+  "/login",
+  expressAsyncHandler(async (request, response) => {
+    //get userCollectionObject
+    let userCollectionObject = request.app.get("userCollectionObject");
+    //get user credentials obj from client
+    let userCredObj=request.body
+    //seacrh for user by username
+    let userOfDB=await userCollectionObject.findOne({username:userCredObj.username});
+    //if username not existed
+    if(userOfDB==null){
+      response.send({message:"Invalid user"})
+    }
+    //if username existed
+    else{
+      //compare passwords
+      let status=await bcryptjs.compare(userCredObj.password,userOfDB.password);
+      //if passwords not matched
+      if(status==false){
+        response.send({message:"Invalid password"})
+      }
+      //if passwords are matched
+      else{
+        //create token
+        let token=jwt.sign({username:userOfDB.username},'abcdef',{expiresIn:60})
+        //send token
+        response.send({message:"login success",payload:token,userObj:userOfDB})
+      }
+    }
+  })
+);
+
+
+
+
+
+
 
 
 
 
 //create a route to 'create-user'
-userApp.post("/create-user", (request, response) => {
-  //get user obj sent by client
-  let newUser = request.body;
-
-  //push new user to users list
-  users.push(newUser);
-  //send response
-  response.send({ message: "New user created" });
-});
-
+userApp.post(
+  "/create-user",
+  expressAsyncHandler(async (request, response) => {
+    //get userCollectionObject
+    let userCollectionObject = request.app.get("userCollectionObject");
+    //get userObj from client
+    let newUserObj = request.body;
+    //seacrh for user by username
+    let userOfDB = await userCollectionObject.findOne({
+      username: newUserObj.username,
+    });
+    //if user existed
+    if (userOfDB !== null) {
+      response.send({
+        message: "Username has already taken..Plz choose another",
+      });
+    }
+    //if user not existed
+    else {
+      //hash password
+      let hashedPassword = await bcryptjs.hash(newUserObj.password, 6);
+      //replace plain password with hashed password in newUserObj
+      newUserObj.password = hashedPassword;
+      //insert newUser
+      await userCollectionObject.insertOne(newUserObj);
+      //send response
+      response.send({ message: "New User created" });
+    }
+  })
+);
 
 //create a route to modify user data
-userApp.put("/update-user", (request, response) => {
-  //get modified user obj
-  let modifiedObj = req.body;
-
-  //logic to modify existing user
-  //send response
-});
 
 
-
-
-//create a route to delete user by id
-userApp.delete("/remove-user/:id", (request, response) => {
-  //get id of user to remove
-  let userId = (+request.params.id);
-
-  //logic to identify and remove user
-  //send response
-});
-
+//create a route to delete user by username
 
 
 //export userApp
-module.exports=userApp;
+module.exports = userApp;
